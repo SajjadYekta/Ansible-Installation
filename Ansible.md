@@ -1,7 +1,5 @@
 # Ansible
 
-[https://docs.google.com/presentation/d/1R4FvOesPMQ1TMOqlyGVP1uoSvFeaE8Bt/edit?usp=drive_link&ouid=105633167976464736561&rtpof=true&sd=true](https://docs.google.com/presentation/d/1R4FvOesPMQ1TMOqlyGVP1uoSvFeaE8Bt/edit?usp=drive_link&ouid=105633167976464736561&rtpof=true&sd=true)
-
 ## HOW TO INSTALL ANSIBLE:
 
 the ansible package is in the default repository of Linux
