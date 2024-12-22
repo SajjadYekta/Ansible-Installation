@@ -134,7 +134,7 @@ ansible all -m command -a "whoami" --become-user sajjad #use sajjad user
 ansible all -m command -a "whoami" -bK # -k means, ask password,
 ```
 
-what is different between SHELL and COMMAND:
+what is difference between SHELL and COMMAND:
 
 command compile your order as Python and in the destination server again run with Python order,
 
@@ -203,7 +203,7 @@ force=yes (replace)
 
 backup=yes (keep modifying time and I nod)
 
-checksum=yes (check run seccessfully)
+checksum=yes (check run successfully)
 
 ```bash
 #e.g
@@ -230,6 +230,8 @@ SETUP MODULE (gathering fact)
 ```bash
 #e.g
 ansible all -m setup
+#you cant fetch the specific parameter
+ansible all -m setup -a "filter=*family*"
 ```
 
 HANDLERS 
@@ -254,4 +256,320 @@ It works like a function in programming that you can call several times in your 
       yum: name=vsftpd state=latest
       ignore_errors: yes
       notify: start vsftpd
+```
+
+VARIABLES IN ANSIBLE
+
+Host Scope:
+
+It is used in the inventory forward to remote servers line inventory 
+
+```bash
+#e.g
+#in inventory file in front of the remote line
+centos http_port=8080 snmp_port=161-162 internal_ip_range=192.168.100.0
+
+#on controller server
+vi firewall-playbook.yaml
+
+  name: Set Firewall Configurations
+  hosts: centos
+  become: true
+  tasks:
+    -  firewalld:
+         service: https
+         permanent: true
+         state: enabled
+
+    -  firewalld:
+         port: "{{ http_port }}/tcp"
+         permanent: true
+         state: disabled
+
+```
+
+Playbook Scope:
+
+It is used in the scope of playbook just in the playbook, it is used before the task on the top of the Tasks, 
+
+```bash
+#e.g
+#on controller server
+vi firewall-playbook.yaml
+  name: Set Firewall Configurations
+  hosts: centos
+  become: true
+  vars:
+    http_port: 8080
+    snmp_port: 161-162
+    internal_ip_range: 192.168.100.0
+  tasks:
+    -  firewalld:
+         service: https
+         permanent: true
+```
+
+Sample to the set variable on the File:
+
+```bash
+#e.g
+#on controller server
+vi vars_file.yaml
+http_port: 8080
+snmp_port: 161-162
+internal_ip_range: 192.168.100.0
+
+#on controller server
+vi firewall-playbook.yaml
+  name: Set Firewall Configurations
+  hosts: centos
+  become: true
+  vars_files:
+    - vars_file.yaml
+  tasks:
+    -  firewalld:
+         service: https
+         permanent: true
+```
+
+Global Scope:
+
+It is used for all of the remote servers, in the last line of the inventory file
+
+ANSIBLE FACT
+
+DEBUG MODULE:
+
+This  makes your message or your description after the tack successfully run 
+
+```yaml
+#e.g
+- name: test debug module
+	hosts: all
+	becoem: yes
+	vars:
+		- first_var= "DEBUG" 
+	tasks:
+		- name: result
+			debug: msg=" test of the variable - {{ first_var }} "
+```
+
+REGISTER MODULE
+
+Push all of the results to the a variable and then you can call with the DEBUG module,
+
+this is an example and you can separate fields and show specific your Syntax  
+
+```yaml
+#e.g
+- name: register with debug
+  hosts: all
+
+  vars:
+    - var_thing: "sajjad"
+  tasks:
+    - name: print something
+      command: echo -e "{{ var_thing }}\nTrust your progress\nI like Linux with {{ var_thing }}"
+      register: my_result
+
+    - name: show_result
+      debug: msg={{ my_result.stdout_lines }}
+      #or use this syntax
+      #debug:
+      # - var: my_result.stdout_lines
+```
+
+LOCAL_ACTION MODULE
+
+This module do some module in the local servers for e.q you want copy from /etc/config to /home/sajjad/ , 
+
+```yaml
+- name: register with debug
+  hosts: all	
+    - name: Initialize Kubernetes Cluster on Master-1
+      shell: "kubeadm init --upload-certs --apiserver-advertise-address {{ ansible_default_ipv4.address }} --control-plane-endpoint {{ ansible_default_ipv4.address }}:6443 --pod-network-cidr 10.244.0.0/16"
+      register: results
+
+    - name: Save the Result of the command
+      local_action:
+        module: copy
+        content: "{{ results.stdout }}"
+        dest: /root/kubeadm_init_result_kmaster1.log
+        force: yes
+```
+
+CONDITIONS WHEN OR FAILED_WHEN
+
+in this sample I said go and run the command and WHEN the parameters is true
+
+```yaml
+- hosts: ubuntu,centos,suse
+  become: yes
+
+  tasks:
+    - name: Remove Apache on Ubuntu Server
+      apt: name=apache2 state=absent
+      when: ansible_os_family == "Debian"
+
+    - name: Remove Apache on CentOS  Server
+      yum: name=httpd  state=absent
+      when: ansible_os_family == "RedHat"
+```
+
+CONDITIONS LOOP
+
+with_item: 
+
+this condition is going to deprecated, but the syntact is like this:
+
+```yaml
+#e.g 
+- hosts: ubuntu
+  become: yes
+
+  tasks:
+ #(depricated)
+  # - name: install packages
+  #   apt: name={{ item }} update_cache=yes state=latest
+  #   with_items:
+  #    - vim
+  #    - nano
+  #    - apache2
+ #e.g (it sugessted)
+   - name: install packages
+     apt: 
+       name: ["vim", "nano", "apache2"]
+ #or
+   #    name:
+   #     - vim
+   #     - nano
+   #     - apache2      
+       update_cache: yes
+       state: latest
+```
+
+with_file:
+
+It makes copy from several src file, src: {{ item }} is fixed,
+
+```yaml
+- name: copy serverall file
+  with_file:
+    - file.txt
+    - file2.txt
+  copy:
+    src: {{ item }}
+    dest: /home/ansible/
+    
+```
+
+with_sequence:
+
+Another loop, using a different sequence orders:
+
+```yaml
+  tasks:
+   - name: show file(s) contents
+     debug: msg={{ item }}
+     with_sequence: start=1 end=5
+```
+
+ANSIBLE-VAULT
+
+this feature is for securing your playbook.yaml
+
+```yaml
+#run this command to make a password for securing playbook
+ansible-vault encrypt apache-playbook.yaml
+New Vault password:
+Confirm New Vault password:
+
+#editing
+ansible-vault edit apache-playbook.yaml
+
+#runing
+ansible-vault apache-playbook.yaml --ask-vault-pass # is going depricated
+ansible-vault apache-playbook.yaml --vault-password file password.txt # is going depricated
+ansible-vault apache-playbook.yml --vault-id @prompt # it sugessted
+
+#regnerate password
+ansible-vault rekey apache-playbook.yaml
+
+#encript-string # use the output as a value of the your-variable
+ansible-vault encrypt-string 'your-pass' --name 'your-variable'
+```
+
+TEMPLATE MODULE
+
+Sometimes we need to call dynamic variables and set them as a value in our file, 
+
+this example shows us how is it used:
+
+```yaml
+#make sample file that is used from dynamic and static variable 
+vi index.html.j2
+<html>
+<center>
+<h1> This machine's hostname is {{ ansible_hostname }}</h1>
+<h2> os family is {{ ansible_os_family }}</h2>
+<small>file version is {{ file_version }}</small> 
+{# This is comment, it will not appear in final output #}
+</center>
+</html>
+```
+
+make a playbook for using top file:
+
+```yaml
+vi template-playbook.yaml
+
+- hosts: all
+  become: yes
+  vars:
+   file_version: 1.0
+
+  tasks:
+   - name: install default web page
+     template:
+       src: index.html.j2
+       dest: /var/www/html/index.html #its better to identify your file name,
+       mode: 0777
+```
+
+INCLUDE STATEMENT
+
+by this feature we can call the other playbook in a specific playbook,
+
+```yaml
+vi include-playbook.yaml
+
+- include: pre-installation-playbook.yaml
+
+- hosts: all
+  become: yes
+  tasks:
+  - include: installation-playbook.yaml
+  - include: post-installation-playbook.yaml
+```
+
+ANSIBLE ROLLS
+
+this feature separate and organize your big playbook to the small YAML file for simply using 
+
+```yaml
+#make a dir for name of the company and run it this command 
+#it sugesst to cp your inventury to the this folder
+nsible-galaxy init <your name of the project>
+
+```
+
+you can download the many ROLLS and COLLECTION from galaxy.ansible.com
+
+ANSIBLE COLLECTION
+
+the collection is the assembled  modules and plugins in one collection, one plugin made several modules
+
+```yaml
+#for e.q you can download the collection in the galaxy.ansible.com
+ansible-galaxy collection install kubernetes.core
 ```
