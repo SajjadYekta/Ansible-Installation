@@ -345,13 +345,13 @@ This  makes your message or your description after the tack successfully run
 ```yaml
 #e.g
 - name: test debug module
-	hosts: all
-	becoem: yes
-	vars:
-		- first_var= "DEBUG" 
-	tasks:
-		- name: result
-			debug: msg=" test of the variable - {{ first_var }} "
+  hosts: all
+  becoem: yes
+  vars:
+    - first_var= "DEBUG" 
+  tasks:
+    - name: result
+      debug: msg=" test of the variable - {{ first_var }} "
 ```
 
 REGISTER MODULE
