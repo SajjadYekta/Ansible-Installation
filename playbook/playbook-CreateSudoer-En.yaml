@@ -6,7 +6,7 @@
   become: yes
 
   vars:
-    new_username: yekta12
+    new_username: sajjad
     new_user_password_base64: eWVrdGExMg== # Base64 encoded 'yekta6'
 
   tasks:
