@@ -1,4 +1,4 @@
-- name: Create-user and grant sudo privileges
+- name: Create-user-and grant sudo privileges
   hosts: all
   become: yes
 
