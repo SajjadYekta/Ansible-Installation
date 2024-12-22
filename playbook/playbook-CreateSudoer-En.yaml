@@ -1,3 +1,6 @@
+# you have to encode your password by base64 protoclole in cli by this command :
+# echo "your password" | base64
+
 - name: Create-user-and grant sudo privileges
   hosts: all
   become: yes
