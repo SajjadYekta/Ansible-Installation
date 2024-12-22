@@ -1,0 +1,20 @@
+- name: Create user and grant sudo privileges
+  hosts: all
+  become: yes
+
+  vars:
+    new_username: yekta12
+    new_user_password_base64: eWVrdGExMg== # Base64 encoded 'yekta6'
+
+  tasks:
+    - name: Add user
+      user:
+        name: "{{ new_username }}"
+        password: "{{ new_user_password_base64 | b64decode | password_hash('sha512') }}"
+        shell: /bin/bash
+
+    - name: Add user to sudoers
+      lineinfile:
+        path: /etc/sudoers
+        line: "{{ new_username }} ALL=(ALL:ALL) NOPASSWD: ALL"
+        validate: 'visudo -cf %s'
